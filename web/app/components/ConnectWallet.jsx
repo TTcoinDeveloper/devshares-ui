@@ -17,13 +17,10 @@ class ConnectWallet extends React.Component {
     }
 
     render() {
-
-
         let data = "! Not connected !";
         if (ConnectStore.isConnected()) {
             data = "Connected";
         }
-
 
         return (
             <div className="grid-block vertical">
