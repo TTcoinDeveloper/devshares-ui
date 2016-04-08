@@ -350,6 +350,7 @@ let routes = (
         <Route path="invoice/:data" component={Invoice}/>
         <Route path="connect/:data" component={ConnectWallet}/>
         <Route path="explorer/markets" component={Markets}/>
+        <Route path="connect/:data" component={ConnectWallet}/>
         <Route path="market/:marketID" component={Exchange}/>
         <Route path="settings" component={Settings}/>
         <Route path="block/:height" component={BlockContainer}/>
