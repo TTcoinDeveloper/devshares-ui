@@ -50,6 +50,7 @@ import WalletDb from "stores/WalletDb";
 import PrivateKeyActions from "actions/PrivateKeyActions";
 import ReactTooltip from "react-tooltip";
 import Invoice from "./components/Transfer/Invoice";
+import ConnectWallet from "./components/ConnectWallet";
 import ChainStore from "api/ChainStore";
 import {BackupCreate, BackupRestore} from "./components/Wallet/Backup";
 import WalletChangePassword from "./components/Wallet/WalletChangePassword"
@@ -312,16 +313,19 @@ let routes = (
             <Route path="backup/brainkey" component={BackupBrainkey}/>
             <Route path="balance-claims" component={BalanceClaimActive}/>
         </Route>
-        <Route path="create-wallet" component={WalletCreate}/>
-        <Route path="transfer" component={Transfer}/>
-        <Route path="invoice/:data" component={Invoice}/>
-        <Route path="explorer/markets" component={Markets}/>
-        <Route path="market/:marketID" component={Exchange}/>
-        <Route path="settings" component={Settings}/>
-        <Route path="block/:height" component={BlockContainer}/>
-        <Route path="asset/:symbol" component={AssetContainer}/>
-        <Route path="create-account" component={CreateAccount}/>
-        <Route path="existing-account" component={ExistingAccount}>
+        <Route name="create-wallet" path="create-wallet" component={WalletCreate}/>
+        <Route name="console" path="console" component={Console}/>
+        <Route name="transfer" path="transfer" component={Transfer}/>
+        <Route name="invoice" path="invoice/:data" component={Invoice}/>
+        <Route name="connect" path="connect/:data" component={ConnectWallet}/>
+        <Route name="markets" path="explorer/markets" component={Markets}/>
+        <Route name="exchange" path="market/:marketID" component={Exchange}/>
+        <Route name="settings" path="settings" component={Settings}/>
+        <Route name="block" path="block/:height" component={BlockContainer}/>
+        <Route name="asset" path="asset/:symbol" component={AssetContainer}/>
+        <Route name="tx" path="tx" component={Transaction}/>
+        <Route name="create-account" path="create-account" component={CreateAccount}/>
+        <Route name="existing-account" path="existing-account" component={ExistingAccount}>
             <IndexRoute component={ExistingAccountOptions}/>
             <Route path="import-backup" component={BackupRestore}/>
             <Route path="import-keys" component={ImportKeys}/>
