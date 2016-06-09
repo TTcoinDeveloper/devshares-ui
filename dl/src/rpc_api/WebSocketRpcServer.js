@@ -24,10 +24,10 @@ class WebSocketRpcServer {
                   request[0].hasOwnProperty("jsonrpc")))
                 // Whatever this is, it's not a JSON-RPC message. Toss it.
                 return;
-            
+
             console.log(JSON.stringify(request));
             let response;
-            
+
             if (_.isArray(request)) {
                 // Batch call
                 // I can safely use Promise.all here, since promises returned by _process which are guaranteed to
@@ -40,7 +40,7 @@ class WebSocketRpcServer {
             } else {
                 response = this._process(request);
             }
-            
+
             if (response)
                 response.then(response => {s.send(JSON.stringify(response));});
         }.bind(this);
@@ -116,7 +116,7 @@ class WebSocketRpcServer {
         let apiCall = this.calls[request.method];
         let positionalArgs = WebSocketRpcServer._convertNamedArgumentsToPositional(apiCall, request.params);
         let callResultPromise = apiCall.apply(this.scopes[request.method], positionalArgs);
-        
+
         if (request.hasOwnProperty("id")) {
             // Return a promise that always resolves to the data to reply with, never rejects
             return callResultPromise.then(result => {
@@ -145,7 +145,7 @@ class WebSocketRpcServer {
         if (!_.isPlainObject(argNameToValue))
             // It's already positional
             return argNameToValue;
-        
+
         let positionalArgs = (function args(func) {
             // This function adapted from https://stackoverflow.com/a/31194949/1431857
             return (func + '')
@@ -157,7 +157,7 @@ class WebSocketRpcServer {
                 .replace(/=[^,]+/g, '') // strip any ES6 defaults
                 .split(',').filter(Boolean); // split & filter [""]
         })(func);
-        
+
         // Map argument names in positionalArgs to values from argNameToValue, or undefined if not present
         return positionalArgs.map(argName => {
             if (argNameToValue.hasOwnProperty(argName))

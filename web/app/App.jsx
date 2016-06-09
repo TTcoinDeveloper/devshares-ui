@@ -72,7 +72,6 @@ import connectToStores from "alt/utils/connectToStores";
 import Chat from "./components/Chat/Chat";
 
 require("./components/Utility/Prototypes"); // Adds a .equals method to Array for use in shouldComponentUpdate
-
 // require("dl_cli_index").init(window) // Adds some object refs to the global window object
 
 let history = createBrowserHistory({queryKey: false});
