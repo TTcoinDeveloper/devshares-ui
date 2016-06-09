@@ -108,6 +108,8 @@ class App extends React.Component {
                     AccountStore.loadDbData(Apis.instance().chainId)
                 ]).then(() => {
                     AccountStore.tryToSetCurrentAccount();
+                    let url = location.protocol + "//" + location.host + "/#/connect/%s";
+                    navigator.registerProtocolHandler("web+bts", url, "Bitshares Link Support");
                     this.setState({loading: false});
                     let url = location.protocol + "//" + location.host + "/#/connect/%s";
                     navigator.registerProtocolHandler("web+bts", url, "Bitshares Link Support");
