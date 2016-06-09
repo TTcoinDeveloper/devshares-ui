@@ -1,5 +1,3 @@
-var JsonParser = require("jsonparse");
-
 // Class which implements a JSON-RPC 2.0 server on a WebSocket
 //
 // The WebSocket should be prepared and connected before it is passed to the WebSocketRpcServer, as this class is not
@@ -10,7 +8,7 @@ class WebSocketRpcServer {
     // Create the RPC Server on the provided socket
     constructor(socket) {
         if (socket) {
-            setSocket(socket);
+            this.setSocket(socket);
         }
         this.calls = {};
         this.scopes = {};
@@ -18,10 +16,16 @@ class WebSocketRpcServer {
 
     setSocket(socket) {
         this.socket = socket;
-        this.parser = new JsonParser();
         let s = this.socket;
 
-        this.parser.onValue = function(request) {
+        let parse = function(request) {
+            if (!(_.isPlainObject(request) && request.hasOwnProperty("jsonrpc")) &&
+                !(_.isArray(request) && request.length > 0 && _.isPlainObject(request[0]) &&
+                  request[0].hasOwnProperty("jsonrpc")))
+                // Whatever this is, it's not a JSON-RPC message. Toss it.
+                return;
+            
+            console.log(JSON.stringify(request));
             let response;
             
             if (_.isArray(request)) {
@@ -38,14 +42,16 @@ class WebSocketRpcServer {
             }
             
             if (response)
-                response.then(response => {s.send(JSON.stringify(response));});
-        }.bind(this);
-        this.parser.onError = function(error) {
-            
+                response.then(response => {s.send(JSON.stringify(response));console.log(JSON.stringify(response));});
         }.bind(this);
 
         s.onmessage = function(event) {
-            this.parser.write(event.data);
+            try {
+                parse(JSON.parse(event.data));
+            } catch(error) {
+                s.send(JSON.stringify({jsonrpc: "2.0", id: null,
+                                       error: {code: -32700, message: "Invalid JSON.", data: event.data}}));
+            }
         }.bind(this);
     }
 
@@ -81,17 +87,17 @@ class WebSocketRpcServer {
             });
         };
         // These error codes are defined by the JSON-RPC 2.0 spec
-        if (_.isPlainObject(request)) {
+        if (!_.isPlainObject(request) || request.jsonrpc !== "2.0") {
             let error = {code: -32600, message: "Invalid request object.", data: request};
             return promiseCast(WebSocketRpcServer._makeResponse(undefined, error));
         }
         if (!request.hasOwnProperty("method")) {
-            let id = request.hasOwnProperty("id")? request.id : Null;
+            let id = request.hasOwnProperty("id")? request.id : null;
             let error = {code: -32600, message: "No method defined in request.", data: request};
             return promiseCast(WebSocketRpcServer._makeResponse(id, error));
         }
         if (!this.calls.hasOwnProperty(request.method)) {
-            let error = {code: -32601, message: "Method not found.", data: request};
+            let error = {code: -32601, message: "Method not found.", data: {request: request, methods: Object.keys(this.calls)}};
             return promiseCast(WebSocketRpcServer._makeResponse(request.id, error));
         }
 

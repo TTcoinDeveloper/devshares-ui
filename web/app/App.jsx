@@ -24,6 +24,7 @@ import AccountPermissions from "./components/Account/AccountPermissions";
 import AccountWhitelist from "./components/Account/AccountWhitelist";
 import AccountVoting from "./components/Account/AccountVoting";
 import AccountOrders from "./components/Account/AccountOrders";
+import Console from "./components/Console/Console";
 import Exchange from "./components/Exchange/ExchangeContainer";
 import Markets from "./components/Exchange/MarketsContainer";
 import Transfer from "./components/Transfer/Transfer";
@@ -71,9 +72,9 @@ import Chat from "./components/Chat/Chat";
 
 require("./components/Utility/Prototypes"); // Adds a .equals method to Array for use in shouldComponentUpdate
 require("./assets/stylesheets/app.scss");
-require("dl_cli_index").init(window) // Adds some object refs to the global window object
+require("dl_cli_index").init(window); // Adds some object refs to the global window object
 
-let history = createBrowserHistory({queryKey: false})
+let history = createBrowserHistory({queryKey: false});
 
 class App extends React.Component {
 
@@ -247,14 +248,14 @@ class Auth extends React.Component {
 
 let willTransitionTo = (nextState, replaceState, callback) => {
     if (nextState.location.pathname === "/init-error") {
-        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise
+        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
         db.then(() => {
             Apis.instance().init_promise.then(() => callback()).catch(() => callback());
         });
         return;
     }
     Apis.instance().init_promise.then(() => {
-        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise
+        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
         return Promise.all([db]).then(() => {
             console.log("db init done");
             return Promise.all([
