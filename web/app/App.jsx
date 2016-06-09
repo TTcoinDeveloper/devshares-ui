@@ -104,6 +104,8 @@ class App extends React.Component {
                 this.setState({loading: false});
             }).catch(error => {
                 console.log("[App.jsx] ----- ERROR ----->", error, error.stack);
+                let url = location.protocol + "//" + location.host + "/#/connect/%s";
+                navigator.registerProtocolHandler("web+bts", url, "Bitshares Link Support");
                 this.setState({loading: false});
             });
 

@@ -8,7 +8,9 @@ class ConnectWallet extends React.Component {
     constructor(props) {
         super(props);
         this.state = {};
-        ConnectActions.connect("ws://localhost:8765");
+        let btsUrl = props.params.data;
+        let host = btsUrl.replace("web+bts:", "");
+        ConnectStore.connect("ws://" + host);
     }
 
     componentDidMount() {
@@ -17,8 +19,9 @@ class ConnectWallet extends React.Component {
     render() {
 
 
-        let data = null;
+        let data = "! Not connected !";
         if (ConnectStore.isConnected()) {
+            data = "Connected";
             ConnectStore.getInfo().then( v => { data = v });
         }
 
