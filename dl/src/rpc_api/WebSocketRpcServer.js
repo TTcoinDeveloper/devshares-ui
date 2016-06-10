@@ -70,8 +70,9 @@ class WebSocketRpcServer {
             if (scope) this.scopes[name] = func;
         } else {
             // name is the namespace, func is {methodName: implementation, ...}
-            _.forOwn(func, function(methodName, implementation) {
+            _.forOwn(func, function(implementation, methodName) {
                 let qualifiedName = [name, methodName].join('.');
+                console.log("Exposing " + qualifiedName + " = " + implementation.toString());
                 this.calls[qualifiedName] = implementation;
                 if (scope) {
                     this.scopes[qualifiedName] = scope;

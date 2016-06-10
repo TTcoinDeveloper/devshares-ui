@@ -2,6 +2,7 @@ var alt = require("../alt-instance");
 var WebSocketClient = require("ReconnectingWebSocket");
 var WebSocketRpc = require("rpc_api/WebSocketRpcServer");
 var ConnectActions = require('actions/ConnectActions');
+var AccountStore = require("stores/AccountStore");
 
 class ConnectionStore {
 
@@ -16,6 +17,8 @@ class ConnectionStore {
         this.exportPublicMethods({
             connect: this.connect,
             getInfo: this.getInfo,
+            getObjectById: this.getObjectById,
+            getMyAccounts: this.getMyAccounts,
             exec: this.exec,
             isConnected: this.isConnected,
             _registerApi: this._registerApi
@@ -54,8 +57,23 @@ class ConnectionStore {
         return new Promise(resolve => {resolve("This is the info: a is " + a + ", and b is " + b);});
     }
 
+    getObjectById(id) {
+        return Apis.instance().db_api().exec("get_objects", [[id]]);
+    }
+    
+    getMyAccounts() {
+        console.log(JSON.stringify(AccountStore.getMyAccounts()));
+        return new Promise(resolve => {resolve(AccountStore.getMyAccounts());});
+    }
+
     _registerApi() {
         this.ws_rpc.expose('getInfo', this.getInfo, this);
+        this.ws_rpc.expose('blockchain', {
+            getObjectById: this.getObjectById
+        }, this);
+        this.ws_rpc.expose('wallet', {
+            getMyAccounts: this.getMyAccounts
+        }, this);
     }
 
 }

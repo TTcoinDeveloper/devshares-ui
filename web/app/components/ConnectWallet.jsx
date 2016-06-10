@@ -26,7 +26,6 @@ class ConnectWallet extends React.Component {
         }
 
 
-//        NotificationActions.error('Test');
         return (
             <div className="grid-block vertical">
                 <div className="grid-content">
