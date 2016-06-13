@@ -16,8 +16,8 @@ class ConnectionStore {
 
         this.exportPublicMethods({
             connect: this.connect,
-            getInfo: this.getInfo,
             getObjectById: this.getObjectById,
+            getAllAssets: this.getAllAssets,
             getMyAccounts: this.getMyAccounts,
             exec: this.exec,
             isConnected: this.isConnected,
@@ -53,12 +53,33 @@ class ConnectionStore {
         this.ws_rpc = null
     }
 
-    getInfo(a, b) {
-        return new Promise(resolve => {resolve("This is the info: a is " + a + ", and b is " + b);});
-    }
-
     getObjectById(id) {
         return Apis.instance().db_api().exec("get_objects", [[id]]);
+    }
+
+    getAllAssets() {
+        let assets = [];
+        let dbApi = Apis.instance().db_api();
+        return new Promise((resolve, reject) => {
+            let fetchMore = lowerBound => {
+                dbApi.exec("list_assets", [lowerBound, 100]).then(list => {
+                    console.log(list.length);
+                    assets = assets.concat(list);
+                    if (list.length >= 100) {
+                        fetchMore(list[list.length - 1].symbol);
+                    } else {
+                        console.log(assets.length);
+                        resolve(_.uniq(assets.map(asset => {
+                            return {
+                                id: asset.id, symbol: asset.symbol,
+                                precision: asset.precision, issuer: asset.issuer
+                            };
+                        })));
+                    }
+                });
+            };
+            fetchMore("");
+        });
     }
     
     getMyAccounts() {
@@ -67,9 +88,9 @@ class ConnectionStore {
     }
 
     _registerApi() {
-        this.ws_rpc.expose('getInfo', this.getInfo, this);
         this.ws_rpc.expose('blockchain', {
-            getObjectById: this.getObjectById
+            getObjectById: this.getObjectById,
+            getAllAssets: this.getAllAssets
         }, this);
         this.ws_rpc.expose('wallet', {
             getMyAccounts: this.getMyAccounts
