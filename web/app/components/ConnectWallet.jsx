@@ -22,7 +22,6 @@ class ConnectWallet extends React.Component {
         let data = "! Not connected !";
         if (ConnectStore.isConnected()) {
             data = "Connected";
-            ConnectStore.getInfo().then( v => { data = v });
         }
 
 

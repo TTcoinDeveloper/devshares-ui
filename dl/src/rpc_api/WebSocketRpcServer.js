@@ -42,15 +42,26 @@ class WebSocketRpcServer {
             }
             
             if (response)
-                response.then(response => {s.send(JSON.stringify(response));console.log(JSON.stringify(response));});
+                response.then(response => {s.send(JSON.stringify(response));});
         }.bind(this);
 
         s.onmessage = function(event) {
+            let message = null;
             try {
-                parse(JSON.parse(event.data));
+                message = JSON.parse(event.data);
             } catch(error) {
+                console.log("Error parsing JSON: " + event.data);
+                console.log(error);
                 s.send(JSON.stringify({jsonrpc: "2.0", id: null,
-                                       error: {code: -32700, message: "Invalid JSON.", data: event.data}}));
+                                       error: {code: -32700, message: "Invalid JSON.",
+                                               data: {request: event.data, error: error}}}));
+            }
+            try {
+                parse(message);
+            } catch(error) {
+                console.log("Internal error: " + error);
+                s.send(JSON.stringify({jsonrpc: "2.0", id: message.id,
+                                       error: {code: -32000, message: "Internal server error.", data: event.data}}));
             }
         }.bind(this);
     }
@@ -72,7 +83,6 @@ class WebSocketRpcServer {
             // name is the namespace, func is {methodName: implementation, ...}
             _.forOwn(func, function(implementation, methodName) {
                 let qualifiedName = [name, methodName].join('.');
-                console.log("Exposing " + qualifiedName + " = " + implementation.toString());
                 this.calls[qualifiedName] = implementation;
                 if (scope) {
                     this.scopes[qualifiedName] = scope;
@@ -112,6 +122,7 @@ class WebSocketRpcServer {
             return callResultPromise.then(result => {
                 return WebSocketRpcServer._makeResponse(request.id, undefined, result);
             }).catch(error => {
+                console.log("Error processing RPC call: " + error);
                 if (_.isObject(error) && error.hasOwnProperty("code") && error.hasOwnProperty("message")) {
                     return WebSocketRpcServer._makeResponse(request.id, error);
                 } else {
