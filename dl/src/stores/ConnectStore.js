@@ -19,6 +19,7 @@ class ConnectionStore {
             getObjectById: this.getObjectById,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
+            getAccountByName: this.getAccountByName,
             getAccountBalances: this.getAccountBalances,
             getAccountHistory: this.getAccountHistory,
             getAccountHistoryByOpCode: this.getAccountHistoryByOpCode,
@@ -89,10 +90,15 @@ class ConnectionStore {
             });
         }).catch(error => {console.log(error); throw error;});
     }
+    
+    getAccountByName(accountName) {
+        let db = Apis.instance().db_api();
+        return db.exec("get_account_by_name", [accountName]);
+    }
 
     getAccountBalances(accountName) {
         let db = Apis.instance().db_api();
-        return db.exec("get_account_by_name", [accountName]).then(account => {
+        return this.getAccountByName(accountName).then(account => {
             return db.exec("get_account_balances", [account.id, []]);
         }).then(balances => {
             return balances.map(balance => {
@@ -141,6 +147,7 @@ class ConnectionStore {
             getObjectById: this.getObjectById,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
+            getAccountByName: this.getAccountByName,
             getAccountBalances: this.getAccountBalances,
             getAccountHistory: this.getAccountHistory,
             getAccountHistoryByOpCode: this.getAccountHistoryByOpCode
