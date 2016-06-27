@@ -4,6 +4,9 @@ var WebSocketRpc = require("rpc_api/WebSocketRpcServer");
 var ConnectActions = require('actions/ConnectActions');
 var AccountStore = require("stores/AccountStore");
 
+// Zip function taken from http://stackoverflow.com/a/10284006/1431857
+var zip= rows=>rows[0].map((_,c)=>rows.map(row=>row[c]));
+
 class ConnectionStore {
 
     constructor() {
@@ -23,6 +26,7 @@ class ConnectionStore {
             getAccountBalances: this.getAccountBalances,
             getAccountHistory: this.getAccountHistory,
             getAccountHistoryByOpCode: this.getAccountHistoryByOpCode,
+            getTransactionFees: this.getTransactionFees,
             getMyAccounts: this.getMyAccounts,
             isConnected: this.isConnected,
             _registerApi: this._registerApi
@@ -82,8 +86,6 @@ class ConnectionStore {
             return dbApi.exec("get_accounts", [assets.map(asset => { return asset.issuer; })]);
         }).then(accounts => {
             // Replace issuer IDs with account names
-            // Zip function taken from http://stackoverflow.com/a/10284006/1431857
-            let zip= rows=>rows[0].map((_,c)=>rows.map(row=>row[c]));
             return zip([assets, accounts]).map(assetAccount => {
                 assetAccount[0].issuer = assetAccount[1].name;
                 return assetAccount[0];
@@ -138,6 +140,22 @@ class ConnectionStore {
         });
     }
 
+    getTransactionFees(operations) {
+        let dbApi = Apis.instance().db_api();
+        // Convert operations to the format expected by database API
+        let ops = operations.map(op => {
+            delete op.op.fee;
+            return [op.code, op.op];
+        });
+        return dbApi.exec("get_required_fees", [ops, "1.3.0"]).then(fees => {
+            // Inject the fees back into the original operations, and return them
+            return zip([operations, fees]).map(opFee => {
+                opFee[0].op.fee = opFee[1];
+                return opFee[0];
+            });
+        });
+    }
+    
     getMyAccounts() {
         return new Promise(resolve=>{resolve(AccountStore.getMyAccounts());});
     }
@@ -150,7 +168,8 @@ class ConnectionStore {
             getAccountByName: this.getAccountByName,
             getAccountBalances: this.getAccountBalances,
             getAccountHistory: this.getAccountHistory,
-            getAccountHistoryByOpCode: this.getAccountHistoryByOpCode
+            getAccountHistoryByOpCode: this.getAccountHistoryByOpCode,
+            getTransactionFees: this.getTransactionFees
         }, this);
         this.ws_rpc.expose('wallet', {
             getMyAccounts: this.getMyAccounts
