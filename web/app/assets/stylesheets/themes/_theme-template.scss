@@ -251,8 +251,12 @@
     }
   }
 
-  .header .button,  header .button:active {
+  .header .button,  .header .button:active {
     background-color: $panel-bg-color !important;
+  }
+
+  .header .button.create-account {
+    background-color: $button-bg-color !important;
   }
 
   .grp-menu-item button {
@@ -817,6 +821,29 @@
       @include button-focus($primary-text-color, $panel-bg-color, 10);
     }
   }
+
+
+  .mymarkets-tabs {
+      > li {
+          @include button-focus($secondary-text-color, $panel-bg-color, 0);
+          &:hover {
+            @include button-focus($primary-text-color, $panel-bg-color, 10);
+          }
+
+          &.active {
+              @include button-focus($primary-text-color, $panel-bg-color, 10);
+          }
+      }
+  }
+
+  .mymarkets-list {
+      border-top: 2px solid $panel-bg-color;
+  }
+
+  select.bts-select {
+      color: $secondary-text-color;
+  }
+
 
   div.fm-container:hover {
     background-color: darken($light-panel-bg-color, 5%);
