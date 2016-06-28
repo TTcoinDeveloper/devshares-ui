@@ -1,3 +1,5 @@
+import {Apis} from "graphenejs-ws";
+
 var alt = require("../alt-instance");
 var WebSocketClient = require("ReconnectingWebSocket");
 var WebSocketRpc = require("rpc_api/WebSocketRpcServer");
@@ -38,9 +40,7 @@ class ConnectionStore {
         console.log(`connecting to ${connection_string}`);
         this.ws_rpc = new WebSocketRpc();
         this._registerApi();
-        setTimeout(function() {
-            this.ws_rpc.setSocket(new WebSocketClient(connection_string));
-        }.bind(this), 5000);
+        this.ws_rpc.setSocket(new WebSocketClient(connection_string));
         return this.ws_rpc;
     }
     
@@ -157,7 +157,13 @@ class ConnectionStore {
     }
     
     getMyAccounts() {
-        return new Promise(resolve=>{resolve(AccountStore.getMyAccounts());});
+        return new Promise(resolve => {
+            // FIXME: how do I wait for AccountStore to be loaded? The timeout pretty much always works for me, but it's
+            // a race condition, pure and simple.
+            setTimeout(function() {
+                resolve(AccountStore.getMyAccounts());
+            }, 3000);
+        });
     }
 
     _registerApi() {
