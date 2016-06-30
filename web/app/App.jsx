@@ -261,6 +261,7 @@ let willTransitionTo = (nextState, replaceState, callback) => {
     let connectionString = SettingsStore.getSetting("connection");
 
     if (nextState.location.pathname === "/init-error") {
+
         return Apis.reset(connectionString).init_promise
         .then(() => {
             var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
