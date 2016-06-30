@@ -112,15 +112,15 @@ class App extends React.Component {
                     let url = location.protocol + "//" + location.host + "/#/connect/%s";
                     navigator.registerProtocolHandler("web+bts", url, "Bitshares Link Support");
                 }).catch(error => {
-                    console.log("[App.jsx] ----- ERROR ----->", error, error.stack);
+                    console.log("[App.jsx] ----- ERROR ----->", error);
                     this.setState({loading: false});
                 });
             }).catch(error => {
-                console.log("[App.jsx] ----- ChainStore.init error ----->", error, error.stack);
+                console.log("[App.jsx] ----- ChainStore.init error ----->", error);
                 this.setState({loading: false});
             });
         } catch(e) {
-            console.error(e);
+            console.error("e:", e);
         }
         const user_agent = navigator.userAgent.toLowerCase();
         if (!(window.electron || user_agent.indexOf("firefox") > -1 || user_agent.indexOf("chrome") > -1 || user_agent.indexOf("edge") > -1)) {
@@ -264,20 +264,28 @@ let willTransitionTo = (nextState, replaceState, callback) => {
 
     if (nextState.location.pathname === "/init-error") {
 
-        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
-        return db.then(() => {
-            Apis.reset("ws://127.0.0.1:8090").init_promise
-            .then(() => {
+        return Apis.reset(connectionString).init_promise
+        .then(() => {
+            var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
+            return db.then(() => {
                 return callback();
             }).catch((err) => {
                 console.log("err:", err);
                 return callback();
             });
+        }).catch((err) => {
+            console.log("err:", err);
+            return callback();
         });
 
     }
     Apis.instance(connectionString).init_promise.then(() => {
-        var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
+        var db;
+        try {
+            db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
+        } catch(err) {
+            console.log("db init error:", err);
+        }
         return Promise.all([db]).then(() => {
             console.log("db init done");
             return Promise.all([
@@ -338,21 +346,19 @@ let routes = (
             <Route path="backup/brainkey" component={BackupBrainkey}/>
             <Route path="balance-claims" component={BalanceClaimActive}/>
         </Route>
-        <Route name="create-wallet" path="create-wallet" component={WalletCreate}/>
-        <Route name="console" path="console" component={Console}/>
-        <Route name="transfer" path="transfer" component={Transfer}/>
-        <Route name="invoice" path="invoice/:data" component={Invoice}/>
-        <Route name="connect" path="connect/:data" component={ConnectWallet}/>
-        <Route name="markets" path="explorer/markets" component={Markets}/>
-        <Route name="exchange" path="market/:marketID" component={Exchange}/>
-        <Route name="settings" path="settings" component={Settings}/>
-        <Route name="block" path="block/:height" component={BlockContainer}/>
-        <Route name="asset" path="asset/:symbol" component={AssetContainer}/>
-        <Route name="tx" path="tx" component={Transaction}/>
-        <Route name="create-account" path="create-account" component={CreateAccount}/>
-        <Route name="existing-account" path="existing-account" component={ExistingAccount}>
-            <IndexRoute component={ExistingAccountOptions}/>
-            <Route path="import-backup" component={BackupRestore}/>
+        <Route path="create-wallet" component={WalletCreate}/>
+        <Route path="transfer" component={Transfer}/>
+        <Route path="invoice/:data" component={Invoice}/>
+        <Route path="connect/:data" component={ConnectWallet}/>
+        <Route path="explorer/markets" component={Markets}/>
+        <Route path="market/:marketID" component={Exchange}/>
+        <Route path="settings" component={Settings}/>
+        <Route path="block/:height" component={BlockContainer}/>
+        <Route path="asset/:symbol" component={AssetContainer}/>
+        <Route path="create-account" component={CreateAccount}/>
+        <Route path="existing-account" component={ExistingAccount}>
+            <IndexRoute component={BackupRestore}/>
+            <Route path="import-backup" component={ExistingAccountOptions}/>
             <Route path="import-keys" component={ImportKeys}/>
             <Route path="brainkey" component={Brainkey}/>
             <Route path="balance-claim" component={BalanceClaimActive}/>
