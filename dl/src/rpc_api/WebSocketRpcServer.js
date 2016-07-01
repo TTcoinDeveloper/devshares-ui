@@ -126,7 +126,7 @@ class WebSocketRpcServer {
                 if (_.isObject(error) && error.hasOwnProperty("code") && error.hasOwnProperty("message")) {
                     return WebSocketRpcServer._makeResponse(request.id, error);
                 } else {
-                    let errorObject = {code: 0, message: "Error while processing request.", data: error};
+                    let errorObject = {code: 0, message: "Error while processing request.", data: error.toString()};
                     return WebSocketRpcServer._makeResponse(request.id, errorObject);
                 }
             });

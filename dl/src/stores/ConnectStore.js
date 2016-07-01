@@ -1,4 +1,9 @@
 import {Apis} from "graphenejs-ws";
+import {Signature} from "graphenejs-lib";
+import TransactionConfirmActions from "actions/TransactionConfirmActions";
+import WalletUnlockActions from "actions/WalletUnlockActions";
+import WalletDb from "stores/WalletDb";
+import WalletApi from "../rpc_api/WalletApi";
 
 var alt = require("../alt-instance");
 var WebSocketClient = require("ReconnectingWebSocket");
@@ -30,6 +35,8 @@ class ConnectionStore {
             getAccountHistoryByOpCode: this.getAccountHistoryByOpCode,
             getTransactionFees: this.getTransactionFees,
             getMyAccounts: this.getMyAccounts,
+            signJsonObject: this.signJsonObject,
+            broadcastTransaction: this.broadcastTransaction,
             isConnected: this.isConnected,
             _registerApi: this._registerApi
         });
@@ -166,6 +173,43 @@ class ConnectionStore {
         });
     }
 
+    signJsonObject(object, signingAccountName) {
+        return WalletUnlockActions.unlock().then(() => {
+            if (!signingAccountName)
+                throw "Missing signing account name";
+            // Only sign something that's at least kind of human readable
+            if (typeof(object) !== "string" || typeof(JSON.parse(object)) !== "object")
+                throw "Refusing to sign value which is not a JSON object";
+            // TODO: Display a prompt showing the user the object to sign and confirm that they're willing to sign it
+            return this.getAccountByName(signingAccountName);
+        }).then(account => {
+            if (!account)
+                throw "No such account found: " + signingAccountName;
+            let memoPublicKey = account.options.memo_key;
+            let memoPrivateKey = WalletDb.getPrivateKey(memoPublicKey);
+            if (!memoPrivateKey) {
+                throw "Wallet does not have private memo key for " + signingAccountName;
+            }
+            console.log(memoPrivateKey);
+
+            return Signature.sign(object, memoPrivateKey).toHex();
+        });
+    }
+
+    broadcastTransaction(operations) {
+        let wallet_api = new WalletApi();
+        let trx = wallet_api.new_transaction();
+        _.forEach(operations, function(op) {
+            trx.add_operation([op.code, op.op]);
+        });
+        return WalletDb.process_transaction(trx, null, false).then(() => {
+            return TransactionConfirmActions.confirm(trx);
+        }).then(() => {
+            console.log(trx.id());
+            return trx.id();
+        });
+    }
+
     _registerApi() {
         this.ws_rpc.expose('blockchain', {
             getObjectById: this.getObjectById,
@@ -178,7 +222,9 @@ class ConnectionStore {
             getTransactionFees: this.getTransactionFees
         }, this);
         this.ws_rpc.expose('wallet', {
-            getMyAccounts: this.getMyAccounts
+            getMyAccounts: this.getMyAccounts,
+            signJsonObject: this.signJsonObject,
+            broadcastTransaction: this.broadcastTransaction
         }, this);
     }
 
