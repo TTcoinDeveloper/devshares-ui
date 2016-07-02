@@ -1,6 +1,7 @@
 import {Apis} from "graphenejs-ws";
 import {Signature} from "graphenejs-lib";
 import TransactionConfirmActions from "actions/TransactionConfirmActions";
+import TransactionConfirmStore from "stores/TransactionConfirmStore";
 import WalletUnlockActions from "actions/WalletUnlockActions";
 import WalletDb from "stores/WalletDb";
 import WalletApi from "../rpc_api/WalletApi";
@@ -197,17 +198,33 @@ class ConnectionStore {
     }
 
     broadcastTransaction(operations) {
-        let wallet_api = new WalletApi();
-        let trx = wallet_api.new_transaction();
-        _.forEach(operations, function(op) {
-            trx.add_operation([op.code, op.op]);
+        return new Promise((resolve, reject) => {
+            let wallet_api = new WalletApi();
+            let trx = wallet_api.new_transaction();
+            let trxListener = function(state) {
+                if (state.error) {
+                    reject(state.error);
+                    TransactionConfirmStore.unlisten(trxListener);
+                    return;
+                }
+                if (state.transaction === trx && state.broadcast) {
+                    resolve(trx.id());
+                    TransactionConfirmStore.unlisten(trxListener);
+                    return;
+                } else {
+                    console.log("Nope", state.transaction, trx);
+                }
+            };
+            
+            _.forEach(operations, function (op) {
+                trx.add_operation([op.code, op.op]);
+            });
+            WalletDb.process_transaction(trx, null, false).then(() => {
+                TransactionConfirmStore.listen(trxListener);
+                return TransactionConfirmActions.confirm(trx);
+            });
         });
-        return WalletDb.process_transaction(trx, null, false).then(() => {
-            return TransactionConfirmActions.confirm(trx);
-        }).then(() => {
-            console.log(trx.id());
-            return trx.id();
-        });
+
     }
 
     _registerApi() {
