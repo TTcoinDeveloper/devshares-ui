@@ -27,6 +27,7 @@ class ConnectionStore {
 
         this.exportPublicMethods({
             connect: this.connect,
+            getAccountId: this.getAccountId,
             getObjectById: this.getObjectById,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
@@ -61,12 +62,27 @@ class ConnectionStore {
         this.ws_rpc = null
     }
 
+    getAccountId(accountNameOrId) {
+        let dbApi = Apis.instance().db_api();
+        return new Promise(accept => {
+            // If we have an account name, look up its ID
+            if (accountNameOrId[0] === '1')
+                accept(accountNameOrId);
+            else
+                dbApi.exec("get_account_by_name", [accountNameOrId]).then(account => {
+                    accept(account.id);
+                });
+        });
+    }
+
     getObjectById(objectId) {
         return Apis.instance().db_api().exec("get_objects", [[objectId]]).then(objects => {return objects[0];});
     }
     
     getAssetBySymbol(assetSymbol) {
-        return Apis.instance().db_api().exec("lookup_asset_symbols", [[symbol]]);
+        return Apis.instance().db_api().exec("lookup_asset_symbols", [[assetSymbol]]).then(objects => {
+            return objects[0];
+        });
     }
 
     getAllAssets() {
@@ -106,10 +122,10 @@ class ConnectionStore {
         return db.exec("get_account_by_name", [accountName]);
     }
 
-    getAccountBalances(accountName) {
+    getAccountBalances(accountNameOrId) {
         let db = Apis.instance().db_api();
-        return this.getAccountByName(accountName).then(account => {
-            return db.exec("get_account_balances", [account.id, []]);
+        return this.getAccountId(accountNameOrId).then(accountId => {
+            return db.exec("get_account_balances", [accountId, []]);
         }).then(balances => {
             return balances.map(balance => {
                 return {amount: balance.amount, type: balance.asset_id};
@@ -117,32 +133,29 @@ class ConnectionStore {
         });
     }
 
-    getAccountHistory(accountName) {
+    getAccountHistory(accountNameOrId) {
         let history = [];
-        let dbApi = Apis.instance().db_api();
         let historyApi = Apis.instance().history_api();
-
-        return dbApi.exec("get_account_by_name", [accountName]).then(account => {
-            return new Promise(resolve => {
-                let fetchMore = lowerBound => {
-                    historyApi.exec("get_account_history", [account.id, "1.11.0", 100, lowerBound]).then(list => {
-                        history = history.concat(list);
-                        if (list.length >= 100) {
-                            fetchMore(list[list.length - 1].id);
-                        } else {
-                            resolve(_.uniq(history.map(historyObject => {
-                                return {id: historyObject.id, opCode: historyObject.op[0]};
-                            })));
-                        }
-                    });
-                };
-                fetchMore("1.11.0");
-            });
+        
+        this.getAccountId(accountNameOrId).then(accountId => {
+            let fetchMore = lowerBound => {
+                historyApi.exec("get_account_history", [accountId, "1.11.0", 100, lowerBound]).then(list => {
+                    history = history.concat(list);
+                    if (list.length >= 100) {
+                        fetchMore(list[list.length - 1].id);
+                    } else {
+                        return (_.uniq(history.map(historyObject => {
+                            return {id: historyObject.id, opCode: historyObject.op[0]};
+                        })));
+                    }
+                });
+            };
+            fetchMore("1.11.0");
         });
     }
 
-    getAccountHistoryByOpCode(accountName, opCode) {
-        return this.getAccountHistory(accountName).then(history => {
+    getAccountHistoryByOpCode(accountNameOrId, opCode) {
+        return this.getAccountHistory(accountNameOrId).then(history => {
             return history.filter(operation => {return operation.opCode === opCode;})
                           .map(operation => {return operation.id;});
         });
