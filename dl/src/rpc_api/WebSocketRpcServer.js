@@ -50,8 +50,8 @@ class WebSocketRpcServer {
             try {
                 message = JSON.parse(event.data);
             } catch(error) {
-                console.log("Error parsing JSON: " + event.data);
-                console.log(error);
+                console.error("Error parsing JSON: " + event.data);
+                console.error(error);
                 s.send(JSON.stringify({jsonrpc: "2.0", id: null,
                                        error: {code: -32700, message: "Invalid JSON.",
                                                data: {request: event.data, error: error}}}));
@@ -59,7 +59,7 @@ class WebSocketRpcServer {
             try {
                 parse(message);
             } catch(error) {
-                console.log("Internal error: " + error);
+                console.error("Internal error: ", error);
                 s.send(JSON.stringify({jsonrpc: "2.0", id: message.id,
                                        error: {code: -32000, message: "Internal server error.", data: event.data}}));
             }
@@ -122,7 +122,7 @@ class WebSocketRpcServer {
             return callResultPromise.then(result => {
                 return WebSocketRpcServer._makeResponse(request.id, undefined, result);
             }).catch(error => {
-                console.log("Error processing RPC call: " + error);
+                console.error("Error processing RPC call: ", error);
                 if (_.isObject(error) && error.hasOwnProperty("code") && error.hasOwnProperty("message")) {
                     return WebSocketRpcServer._makeResponse(request.id, error);
                 } else {

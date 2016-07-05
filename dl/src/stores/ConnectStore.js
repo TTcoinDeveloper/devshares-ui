@@ -62,7 +62,7 @@ class ConnectionStore {
     }
 
     getObjectById(objectId) {
-        return Apis.instance().db_api().exec("get_objects", [[id]]);
+        return Apis.instance().db_api().exec("get_objects", [[objectId]]).then(objects => {return objects[0];});
     }
     
     getAssetBySymbol(assetSymbol) {
