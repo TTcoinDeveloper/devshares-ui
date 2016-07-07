@@ -136,21 +136,23 @@ class ConnectionStore {
     getAccountHistory(accountNameOrId) {
         let history = [];
         let historyApi = Apis.instance().history_api();
-        
-        this.getAccountId(accountNameOrId).then(accountId => {
-            let fetchMore = lowerBound => {
-                historyApi.exec("get_account_history", [accountId, "1.11.0", 100, lowerBound]).then(list => {
-                    history = history.concat(list);
-                    if (list.length >= 100) {
-                        fetchMore(list[list.length - 1].id);
-                    } else {
-                        return (_.uniq(history.map(historyObject => {
-                            return {id: historyObject.id, opCode: historyObject.op[0]};
-                        })));
-                    }
-                });
-            };
-            fetchMore("1.11.0");
+
+        return new Promise(resolve => {
+            this.getAccountId(accountNameOrId).then(accountId => {
+                let fetchMore = lowerBound => {
+                    historyApi.exec("get_account_history", [accountId, "1.11.0", 100, lowerBound]).then(list => {
+                        history = history.concat(list);
+                        if (list.length >= 100) {
+                            return fetchMore(list[list.length - 1].id);
+                        } else {
+                            resolve(_.uniq(history.map(historyObject => {
+                                return {id: historyObject.id, opCode: historyObject.op[0]};
+                            })));
+                        }
+                    });
+                };
+                fetchMore("1.11.0");
+            });
         });
     }
 
