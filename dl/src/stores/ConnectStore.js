@@ -28,6 +28,7 @@ class ConnectionStore {
         this.exportPublicMethods({
             connect: this.connect,
             getAccountId: this.getAccountId,
+            getAccount: this.getAccount,
             getObjectById: this.getObjectById,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
@@ -52,7 +53,7 @@ class ConnectionStore {
         this.ws_rpc.setSocket(new WebSocketClient(connection_string));
         return this.ws_rpc;
     }
-    
+
     isConnected() {
         return this.ws_rpc;
     }
@@ -75,10 +76,21 @@ class ConnectionStore {
         });
     }
 
+    getAccount(accountNameOrId) {
+        let dbApi = Apis.instance().db_api();
+        return new Promise(accept => {
+            // If we have an account name, look up its ID
+            if (accountNameOrId[0] === '1')
+                accept(this.getObjectById(accountNameOrId));
+            else
+                accept(dbApi.exec("get_account_by_name", [accountNameOrId]));
+        });
+    }
+
     getObjectById(objectId) {
         return Apis.instance().db_api().exec("get_objects", [[objectId]]).then(objects => {return objects[0];});
     }
-    
+
     getAssetBySymbol(assetSymbol) {
         return Apis.instance().db_api().exec("lookup_asset_symbols", [[assetSymbol]]).then(objects => {
             return objects[0];
@@ -116,7 +128,7 @@ class ConnectionStore {
             });
         }).catch(error => {console.log(error); throw error;});
     }
-    
+
     getAccountByName(accountName) {
         let db = Apis.instance().db_api();
         return db.exec("get_account_by_name", [accountName]);
@@ -178,7 +190,7 @@ class ConnectionStore {
             });
         });
     }
-    
+
     getMyAccounts() {
         return new Promise(resolve => {
             // FIXME: how do I wait for AccountStore to be loaded? The timeout pretty much always works for me, but it's
@@ -206,7 +218,6 @@ class ConnectionStore {
             if (!memoPrivateKey) {
                 throw "Wallet does not have private memo key for " + signingAccountName;
             }
-            console.log(memoPrivateKey);
 
             return Signature.sign(object, memoPrivateKey).toHex();
         });
@@ -230,7 +241,7 @@ class ConnectionStore {
                     console.log("Nope", state.transaction, trx);
                 }
             };
-            
+
             _.forEach(operations, function (op) {
                 trx.add_operation([op.code, op.op]);
             });
@@ -239,7 +250,20 @@ class ConnectionStore {
                 return TransactionConfirmActions.confirm(trx);
             });
         });
+    }
 
+    getSharedSecret(myAccountNameOrId, otherAccountNameOrId) {
+        Promise.all([
+            this.getAccount(myAccountNameOrId),
+            this.getAccount(otherAccountNameOrId)
+        ]).then(accounts => {
+            let myPublicKey = accounts[0].options.memo_key;
+            let myPrivateKey = WalletDb.getPrivateKey(myPublicKey);
+            if (!myPrivateKey) {
+                throw "Wallet does not have private memo key for " + myAccountNameOrId
+            }
+            resolve(myPrivateKey.get_shared_secret(accounts[1].options.memo_key).toHex());
+        });
     }
 
     _registerApi() {
