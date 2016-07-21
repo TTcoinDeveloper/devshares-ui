@@ -1,5 +1,5 @@
 import {Apis} from "graphenejs-ws";
-import {Signature} from "graphenejs-lib";
+import {Signature, PublicKey} from "graphenejs-lib";
 import TransactionConfirmActions from "actions/TransactionConfirmActions";
 import TransactionConfirmStore from "stores/TransactionConfirmStore";
 import WalletUnlockActions from "actions/WalletUnlockActions";
@@ -40,6 +40,7 @@ class ConnectionStore {
             getMyAccounts: this.getMyAccounts,
             signJsonObject: this.signJsonObject,
             broadcastTransaction: this.broadcastTransaction,
+            getSharedSecret: this.getSharedSecret,
             isConnected: this.isConnected,
             _registerApi: this._registerApi
         });
@@ -196,8 +197,10 @@ class ConnectionStore {
             // FIXME: how do I wait for AccountStore to be loaded? The timeout pretty much always works for me, but it's
             // a race condition, pure and simple.
             setTimeout(function() {
-                resolve(AccountStore.getMyAccounts());
-            }, 3000);
+                let accounts = AccountStore.getMyAccounts();
+                console.log(accounts);
+                resolve(accounts);
+            }, 5000);
         });
     }
 
@@ -253,16 +256,23 @@ class ConnectionStore {
     }
 
     getSharedSecret(myAccountNameOrId, otherAccountNameOrId) {
-        Promise.all([
+        return Promise.all([
             this.getAccount(myAccountNameOrId),
-            this.getAccount(otherAccountNameOrId)
+            this.getAccount(otherAccountNameOrId),
+            WalletUnlockActions.unlock()
         ]).then(accounts => {
             let myPublicKey = accounts[0].options.memo_key;
             let myPrivateKey = WalletDb.getPrivateKey(myPublicKey);
             if (!myPrivateKey) {
                 throw "Wallet does not have private memo key for " + myAccountNameOrId
             }
-            resolve(myPrivateKey.get_shared_secret(accounts[1].options.memo_key).toHex());
+            let otherPublicKey = PublicKey.fromStringOrThrow(accounts[1].options.memo_key);
+            console.log(myPrivateKey.toWif(), accounts[1].options.memo_key);
+            let secret = myPrivateKey.get_shared_secret(otherPublicKey);
+            secret = secret.reduce((prev, current) => {
+              return prev + ('0' + current.toString(16)).substr(-2);
+            }, '');
+            return secret;
         });
     }
 
@@ -280,10 +290,10 @@ class ConnectionStore {
         this.ws_rpc.expose('wallet', {
             getMyAccounts: this.getMyAccounts,
             signJsonObject: this.signJsonObject,
-            broadcastTransaction: this.broadcastTransaction
+            broadcastTransaction: this.broadcastTransaction,
+            getSharedSecret: this.getSharedSecret
         }, this);
     }
-
 }
 
 module.exports = alt.createStore(ConnectionStore, 'ConnectionStore');
