@@ -99,6 +99,7 @@ class App extends React.Component {
         try {
             NotificationStore.listen(this._onNotificationChange.bind(this));
             SettingsStore.listen(this._onSettingsChange.bind(this));
+            
             ChainStore.init().then(() => {
                 this.setState({synced: true});
 
