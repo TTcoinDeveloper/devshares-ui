@@ -30,6 +30,7 @@ class ConnectionStore {
             getAccountId: this.getAccountId,
             getAccount: this.getAccount,
             getObjectById: this.getObjectById,
+            getBlockByHeight: this.getBlockByHeight,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
             getAccountByName: this.getAccountByName,
@@ -37,6 +38,7 @@ class ConnectionStore {
             getAccountHistory: this.getAccountHistory,
             getAccountHistoryByOpCode: this.getAccountHistoryByOpCode,
             getTransactionFees: this.getTransactionFees,
+            unlockWallet: this.unlockWallet,
             getMyAccounts: this.getMyAccounts,
             signJsonObject: this.signJsonObject,
             broadcastTransaction: this.broadcastTransaction,
@@ -90,6 +92,10 @@ class ConnectionStore {
 
     getObjectById(objectId) {
         return Apis.instance().db_api().exec("get_objects", [[objectId]]).then(objects => {return objects[0];});
+    }
+
+    getBlockByHeight(blockHeight) {
+        return Apis.instance().db_api().exec("get_block", [blockHeight]);
     }
 
     getAssetBySymbol(assetSymbol) {
@@ -192,6 +198,10 @@ class ConnectionStore {
         });
     }
 
+    unlockWallet() {
+        WalletUnlockActions.unlock()
+    }
+
     getMyAccounts() {
         return new Promise(resolve => {
             // FIXME: how do I wait for AccountStore to be loaded? The timeout pretty much always works for me, but it's
@@ -241,7 +251,11 @@ class ConnectionStore {
                     TransactionConfirmStore.unlisten(trxListener);
                     return;
                 } else {
-                    console.log("Nope", state.transaction, trx);
+                    if (trx.signed)
+                        reject("Payment failed")
+                    else
+                        reject("Payment canceled by user")
+                    console.warn("Transaction not broadcast", trx);
                 }
             };
 
@@ -279,6 +293,7 @@ class ConnectionStore {
     _registerApi() {
         this.ws_rpc.expose('blockchain', {
             getObjectById: this.getObjectById,
+            getBlockByHeight: this.getBlockByHeight,
             getAssetBySymbol: this.getAssetBySymbol,
             getAllAssets: this.getAllAssets,
             getAccountByName: this.getAccountByName,
@@ -288,6 +303,7 @@ class ConnectionStore {
             getTransactionFees: this.getTransactionFees
         }, this);
         this.ws_rpc.expose('wallet', {
+            unlockWallet: this.unlockWallet,
             getMyAccounts: this.getMyAccounts,
             signJsonObject: this.signJsonObject,
             broadcastTransaction: this.broadcastTransaction,
