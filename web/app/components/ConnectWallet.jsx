@@ -9,7 +9,7 @@ class ConnectWallet extends React.Component {
         super(props);
         this.state = {};
         let btsUrl = props.params.data;
-        let host = btsUrl.replace("web+bts:", "");
+        let host = btsUrl.replace("web+bts:", "").replace("/", ":");
         ConnectStore.connect("ws://" + host);
     }
 

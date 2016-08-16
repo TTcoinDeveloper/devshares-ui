@@ -250,12 +250,14 @@ class ConnectionStore {
                     resolve(trx.id());
                     TransactionConfirmStore.unlisten(trxListener);
                     return;
-                } else {
+                }
+                console.warn("Transaction not broadcast", trx, state);
+                if (state.closed) {
                     if (trx.signed)
                         reject("Payment failed")
                     else
                         reject("Payment canceled by user")
-                    console.warn("Transaction not broadcast", trx);
+                    TransactionConfirmStore.unlisten(trxListener);
                 }
             };
 
