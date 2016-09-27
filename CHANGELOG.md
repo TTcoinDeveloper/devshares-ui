@@ -1,4 +1,54 @@
 ---------------------------------------------------------------------
+Release 2.0.160829
+---------------------------------------------------------------------
+
+New features
+--------
+- Hash checksums for all binaries
+- Add copy address/memo buttons to deposit, improve mobile layout
+- Improve transfer layout, add exchange scam account warnings
+- Add option to move BuySell below Orderbook
+- Add brainkey option to Settings Restore page
+- Add API selection to SyncError page, improve the error message
+
+Bug fixes
+--------
+- Fix price display in MarketCards
+- Add proposed operation id to summary
+- Add deposit/withdraw to mobile menu
+- Fix hiding of disabled chat window
+- Fix WalletCreate submit with invalid inputs, close #860
+- Fix BackupBrainkey navigation
+- Hide input spinner in Firefox
+- Use newest version of node-libs-browser, fixes backups in Firefox close
+- Fix HelpContent 'en' locale fallback
+
+---------------------------------------------------------------------
+Release 2.0.160813
+---------------------------------------------------------------------
+
+New features
+--------
+- Refactor account creation
+- Disable chart indicators by default
+- BlockTrades deposit/withdraw improvements
+- Update Featured assets, add ICOO/PeerPlays
+- Change depth chart tooltip to table layout
+- Restore the Account link to the Header
+- Disable Chat by default, make it easier to enable/disable
+- Add current price to Dashboard MarketCards
+
+Bug fixes
+--------
+- Rearrange Exchange components and improve responsive behaviour
+- Adjust DepthChart min/max range
+- Prevent infinite loop on bad system clock, add warning
+- Filter out duplicate welcome messages from chat history
+- Fix Orderbook click calculation
+- Fix buy side order book click total calculation
+- Fix for 1.0 balance claims
+
+---------------------------------------------------------------------
 Release 2.0.160702
 ---------------------------------------------------------------------
 Bug fixes

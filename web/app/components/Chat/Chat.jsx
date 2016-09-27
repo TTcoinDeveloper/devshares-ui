@@ -228,7 +228,12 @@ export default class Chat extends React.Component {
                 hasFetchedHistory: true
             });
 
-            data.history.forEach(msg => {
+            data.history.filter(a => {
+                return (
+                    a.user !== "Welcome to Bitshares" &&
+                    a.user !== "Welcome to Openledger"
+                );
+            }).forEach(msg => {
                 this.state.messages.push(msg);
             });
             this.forceUpdate();
@@ -441,11 +446,13 @@ export default class Chat extends React.Component {
         e.preventDefault();
         let showChat = !this.state.showChat;
         this.setState({
-            showChat: showChat
+            showChat: showChat,
+            docked: (!showChat && this.state.docked) ? false : this.state.docked
         });
 
         SettingsActions.changeViewSetting({
-            showChat: showChat
+            showChat: showChat,
+            dockedChat: (!showChat && this.state.docked) ? false : this.state.docked
         });
     }
 
@@ -500,6 +507,17 @@ export default class Chat extends React.Component {
 
         SettingsActions.changeViewSetting({
             dockedChat: !this.state.docked
+        });
+    }
+
+    disableChat(e) {
+        e.preventDefault();
+        SettingsActions.changeViewSetting({
+            showChat: false
+        });
+        SettingsActions.changeSetting({
+            setting: "disableChat",
+            value: true
         });
     }
 
@@ -577,6 +595,10 @@ export default class Chat extends React.Component {
                     type="color"
                 />
 
+                <div onClick={this.disableChat.bind(this)} className="button">
+                    <Translate content="settings.disableChat" />
+                </div>
+
                 {/* Done button */}
                 <div style={{position: "absolute", bottom: 5, right: 0}}>
                     <div onClick={this.onToggleSettings.bind(this)} className="button">
@@ -611,7 +633,7 @@ export default class Chat extends React.Component {
                             <div className="chatbox-settings" onClick={this.onToggleSettings.bind(this)}>
                                 <Icon className="icon-14px" name="cog"/>
                             </div>
-                            {docked ? null : <a onClick={this.onToggleChat.bind(this)} className="chatbox-close">&times;</a>}
+                            <a onClick={this.onToggleChat.bind(this)} className="chatbox-close">&times;</a>
                         </div>
 
                         {loading ? <div><LoadingIndicator /></div> : !connected ? (

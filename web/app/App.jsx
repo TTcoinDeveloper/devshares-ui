@@ -64,12 +64,14 @@ import Brainkey from "./components/Wallet/Brainkey";
 import AccountRefsStore from "stores/AccountRefsStore";
 import Help from "./components/Help";
 import InitError from "./components/InitError";
+import SyncError from "./components/SyncError";
 import BrowserSupportModal from "./components/Modal/BrowserSupportModal";
 import createBrowserHistory from "history/lib/createHashHistory";
 import {IntlProvider} from "react-intl";
 import intlData from "./components/Utility/intlData";
 import connectToStores from "alt/utils/connectToStores";
-import Chat from "./components/Chat/Chat";
+import Chat from "./components/Chat/ChatWrapper";
+import Translate from "react-translate-component";
 
 require("./components/Utility/Prototypes"); // Adds a .equals method to Array for use in shouldComponentUpdate
 // require("dl_cli_index").init(window) // Adds some object refs to the global window object
@@ -84,8 +86,11 @@ class App extends React.Component {
         this.state = {
             loading: true,
             synced: false,
+            syncFail: false,
             theme: SettingsStore.getState().settings.get("themes"),
-            disableChat: SettingsStore.getState().settings.get("disableChat", false),
+            disableChat: SettingsStore.getState().settings.get("disableChat", true),
+            showChat: SettingsStore.getState().viewSettings.get("showChat", false),
+            dockedChat: SettingsStore.getState().viewSettings.get("dockedChat", false),
             isMobile: false
         };
     }
@@ -109,14 +114,15 @@ class App extends React.Component {
                     AccountStore.tryToSetCurrentAccount();
                     let url = location.protocol + "//" + location.host + "/#/connect/%s";
                     navigator.registerProtocolHandler("web+bts", url, "Bitshares Link Support");
-                    this.setState({loading: false});
+                    this.setState({loading: false, syncFail: false});
                 }).catch(error => {
                     console.log("[App.jsx] ----- ERROR ----->", error);
                     this.setState({loading: false});
                 });
             }).catch(error => {
                 console.log("[App.jsx] ----- ChainStore.init error ----->", error);
-                this.setState({loading: false});
+                let syncFail = error.message === "ChainStore sync error, please check your system clock" ? true : false;
+                this.setState({loading: false, syncFail});
             });
         } catch(e) {
             console.error("e:", e);
@@ -157,7 +163,7 @@ class App extends React.Component {
     }
 
     _onSettingsChange() {
-        let {settings} = SettingsStore.getState();
+        let {settings, viewSettings} = SettingsStore.getState();
         if (settings.get("themes") !== this.state.theme) {
             this.setState({
                 theme: settings.get("themes")
@@ -168,9 +174,20 @@ class App extends React.Component {
                 disableChat: settings.get("disableChat")
             });
         }
+
+        if (viewSettings.get("showChat") !== this.state.showChat) {
+            this.setState({
+                showChat: viewSettings.get("showChat")
+            });
+        }
+
+        if (viewSettings.get("dockedChat") !== this.state.dockedChat) {
+            this.setState({
+                dockedChat: viewSettings.get("dockedChat")
+            });
+        }
+
     }
-
-
 
     // /** Non-static, used by passing notificationSystem via react Component refs */
     // _addNotification(params) {
@@ -179,13 +196,17 @@ class App extends React.Component {
     // }
 
     render() {
-        let {disableChat, isMobile} = this.state;
+        let {disableChat, isMobile, showChat, dockedChat} = this.state;
 
         let content = null;
 
         let showFooter = this.props.location.pathname.indexOf("market") === -1;
 
-        if (this.state.loading) {
+        if (this.state.syncFail) {
+            content = (
+                <SyncError />
+            );
+        } else if (this.state.loading) {
             content = <div className="grid-frame vertical"><LoadingIndicator /></div>;
         } else if (this.props.location.pathname === "/init-error") {
             content = <div className="grid-frame vertical">{this.props.children}</div>;
@@ -199,7 +220,13 @@ class App extends React.Component {
                             {this.props.children}
                         </div>
                         <div className="grid-block shrink" style={{overflow: "hidden"}}>
-                            {disableChat || isMobile ? null : <Chat footerVisible={showFooter}/>}
+                            {isMobile ? null :
+                                <Chat
+                                    showChat={showChat}
+                                    disable={disableChat}
+                                    footerVisible={showFooter}
+                                    dockedChat={dockedChat}
+                                />}
 
                         </div>
                     </div>
@@ -259,11 +286,11 @@ class Auth extends React.Component {
 
 let willTransitionTo = (nextState, replaceState, callback) => {
 
-    let connectionString = SettingsStore.getSetting("connection");
+    let connectionString = SettingsStore.getSetting("apiServer");
 
     if (nextState.location.pathname === "/init-error") {
 
-        return Apis.reset(connectionString).init_promise
+        return Apis.reset(connectionString, true).init_promise
         .then(() => {
             var db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
             return db.then(() => {
@@ -278,7 +305,7 @@ let willTransitionTo = (nextState, replaceState, callback) => {
         });
 
     }
-    Apis.instance(connectionString).init_promise.then(() => {
+    Apis.instance(connectionString, true).init_promise.then(() => {
         var db;
         try {
             db = iDB.init_instance(window.openDatabase ? (shimIndexedDB || indexedDB) : indexedDB).init_promise;
